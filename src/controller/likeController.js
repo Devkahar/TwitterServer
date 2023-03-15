@@ -1,4 +1,6 @@
+const e = require("express");
 const Like = require("../model/likeModel");
+const { getUserById } = require("./userController");
 
 const createLike = async (post_id, user_id) => {
   const likeExist = await Like.findOne({ post_id, user_id });
@@ -25,7 +27,31 @@ const getUserLikePost = async (post_id, user_id) => {
     return false;
   }
 };
+const getLikePosts = async (page, user_id) => {
+  const data = await Like.find({ user_id })
+    .sort({ createdAt: "desc" })
+    .limit(10)
+    .skip((page - 1) * 10)
+    .populate("post_id");
 
+  if (data) {
+    const newData = data.map(async (el) => {
+      return {
+        _id: el.post_id._id,
+        text: el.post_id.text,
+        like_count: el.post_id.like_count,
+        repost_count: el.post_id.repost_count,
+        ref_id: el.post_id.reply_to_id ? el.post_id.reply_to_id : null,
+        image: el.post_id.image,
+        author_id: await getUserById(el.post_id.author_id),
+      };
+    });
+    const prom = Promise.all(newData);
+    if (prom) {
+      return prom;
+    }
+  }
+};
 const likePost = async (req, res) => {
   const { post_id, _id } = req.body;
   try {
@@ -55,4 +81,5 @@ module.exports = {
   unlikePost,
   getLikeCount,
   getUserLikePost,
+  getLikePosts,
 };

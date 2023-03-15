@@ -2,23 +2,37 @@ const Post = require("../model/postModel");
 const {
   getLikeCount,
   getUserLikePost,
+  getLikePosts,
 } = require("../controller/likeController");
 const { dummyTweets, dummyUser } = require("../helper/dummydata");
 // @desc Create New Post;
 // @route POST api/post/create
 
-const createTweet = async (author_id, text, reply_to_id, image) => {
-  const post = new Post({ author_id, text, reply_to_id, image });
+const createTweet = async (
+  author_id,
+  text,
+  orig_post_id,
+  reply_to_id,
+  image
+) => {
+  const post = new Post({ author_id, text, orig_post_id, reply_to_id, image });
   return await post.save();
 };
 const createPost = async (req, res) => {
-  const { _id, text, ref_id, image } = req.body;
-  if (!ref_id) ref_id = null;
-  if (text === "") {
+  let { _id, text, retweet_id, reply_id, image } = req.body;
+  if (!reply_id) reply_id = null;
+  if (!retweet_id) retweet_id = null;
+  if (!retweet_id && text === "") {
     res.status(400).json({ errorMessage: "Post Body Should not be empty" });
   } else {
     try {
-      const isPostCreated = await createTweet(_id, text, ref_id, image);
+      const isPostCreated = await createTweet(
+        _id,
+        text,
+        retweet_id,
+        reply_id,
+        image
+      );
       if (isPostCreated) {
         res.status(201).json({
           message: "Post Created Successfully",
@@ -119,55 +133,91 @@ const destructureTweet = (tweet) => {
     like_count: tweet.like_count,
     repost_count: tweet.repost_count,
     author: destructureAuthor(tweet.author_id),
-    ref_id: tweet.reply_to_id ? tweet.reply_to_id : null,
+    retweet: tweet.reply_to_id ? destructureTweet(tweet.reply_to_id) : null,
+    reply_tweet: tweet.orig_post_id
+      ? destructureTweet(tweet.orig_post_id)
+      : null,
     image: tweet.image,
   };
 };
-const getTweets = async (page, user_id) => {
+const getTweets = async (page, user_id, like, replies) => {
   let data;
-  if (user_id) {
-    data = await Post.find({ author_id: user_id })
+  if (user_id && like) {
+    data = await getLikePosts(page, user_id);
+  } else if (user_id && replies) {
+    data = await Post.find({ author_id: user_id, reply_to_id: { $ne: null } })
       .sort({ createdAt: "desc" })
       .limit(10)
       .skip((page - 1) * 10)
-      .populate("author_id");
+      .populate("author_id")
+      .populate("orig_post_id")
+      .populate("reply_to_id");
+  } else if (user_id) {
+    data = await Post.find({
+      author_id: user_id,
+      reply_to_id: null,
+      orig_post_id: null,
+    })
+      .sort({ createdAt: "desc" })
+      .limit(10)
+      .skip((page - 1) * 10)
+      .populate("author_id")
+      .populate("orig_post_id")
+      .populate("reply_to_id");
   } else {
-    data = await Post.find()
+    data = await Post.find({ reply_to_id: null, orig_post_id: null })
       .sort({ createdAt: "desc" })
       .limit(10)
       .skip((page - 1) * 10)
-      .populate("author_id");
+      .populate("author_id")
+      .populate("orig_post_id")
+      .populate("reply_to_id");
   }
   return data;
 };
+const getRetweetCount = async (post_id) => {
+  return await Post.find({ orig_post_id: post_id }).count();
+};
+const getReplyCount = async (post_id) => {
+  return await Post.find({ reply_to_id: post_id }).count();
+};
+
 const getAllTweets = async (req, res) => {
   try {
     const { page } = req.params;
-    let { user_id } = req.body;
-    const data = await getTweets(page, user_id);
+    let { user_id, _id, like, replies } = req.body;
+    const data = await getTweets(page, user_id, like, replies);
     if (data) {
-      console.log(data);
-      if (!user_id) user_id = null;
+      // console.log(data);
+      if (!_id) _id = null;
+      // console.log(_id);
       const getLike = data.map((tweet) => getLikeCount(tweet._id));
-      const getUserLiked = data.map((tweet) =>
-        getUserLikePost(tweet._id, user_id)
-      );
+      const getUserLiked = data.map((tweet) => getUserLikePost(tweet._id, _id));
       const userLikedComplete = await Promise.all(getUserLiked);
       const likeComplete = await Promise.all(getLike);
-      if (likeComplete && userLikedComplete) {
+      const replyCount = data.map((tweet) => getReplyCount(tweet._id));
+      const replyCountComplete = await Promise.all(replyCount);
+      const retweetCount = data.map((tweet) => getRetweetCount(tweet._id));
+      const retweetCountComplete = await Promise.all(retweetCount);
+      if (
+        likeComplete &&
+        userLikedComplete &&
+        replyCountComplete &&
+        retweetCountComplete
+      ) {
         likeComplete.map((el) => {
-          console.log(el);
+          // console.log(el);
         });
         const tweets = data.map((tweet, idx) => {
           return {
             ...destructureTweet(tweet),
             like_count: likeComplete[idx],
             like: userLikedComplete[idx],
+            repost_count: retweetCountComplete[idx],
+            reply_count: replyCountComplete[idx],
           };
         });
-        res.status(201).json({
-          tweets,
-        });
+        res.status(201).json({ tweets });
       } else {
         throw new Error("Cannot Fetch All tweets");
       }
@@ -175,6 +225,7 @@ const getAllTweets = async (req, res) => {
       throw new Error("Cannot Fetch All tweets");
     }
   } catch (error) {
+    console.log(error);
     res.status(400).json({
       errorMessage: error.message,
     });
