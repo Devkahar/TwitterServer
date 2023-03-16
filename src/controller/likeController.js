@@ -28,13 +28,14 @@ const getUserLikePost = async (post_id, user_id) => {
   }
 };
 const getLikePosts = async (page, user_id) => {
-  const data = await Like.find({ user_id })
+  let data = await Like.find({ user_id })
     .sort({ createdAt: "desc" })
     .limit(10)
     .skip((page - 1) * 10)
     .populate("post_id");
 
   if (data) {
+    data = data.filter((el) => el.post_id !== null);
     const newData = data.map(async (el) => {
       return {
         _id: el.post_id._id,

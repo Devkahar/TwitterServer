@@ -1,4 +1,5 @@
 const Post = require("../model/postModel");
+const Like = require("../model/likeModel");
 const {
   getLikeCount,
   getUserLikePost,
@@ -51,15 +52,16 @@ const createPost = async (req, res) => {
 // @desc Update Post;
 // @route POST api/post/update
 const updatePost = async (req, res) => {
-  const { _id, _postid, text } = req.body;
+  const { _id, post_id, text, image } = req.body;
   if (text === "") {
     res.status(400).json({ errorMessage: "Post Body Should not be empty" });
   } else {
     try {
       const post = await Post.findOneAndUpdate(
-        { _id: _postid, author_id: _id },
+        { _id: post_id, author_id: _id },
         {
           text,
+          image,
         }
       );
       if (post) {
@@ -78,10 +80,10 @@ const updatePost = async (req, res) => {
 };
 
 const deletePost = async (req, res) => {
-  const { _id, _postid } = req.body;
+  const { _id, post_id } = req.body;
   try {
-    const post = await Post.findByIdAndDelete({ _id: _postid, author_id: _id });
-    if (post) {
+    const post = await Post.findByIdAndDelete({ _id: post_id, author_id: _id });
+    if (post && (await Like.deleteMany({ post_id }))) {
       res.status(201).json({
         message: "Post Deleted Successfully",
         postDeleted: true,

@@ -22,7 +22,6 @@ const signUp = async (req, res) => {
         res.status(401).json({ errorMeassge });
       } else {
         const user = new User({
-          _id: user._id,
           email,
           name,
           password,
@@ -31,6 +30,7 @@ const signUp = async (req, res) => {
         const userCreated = await user.save();
         if (userCreated) {
           const data = {
+            _id: userCreated._id,
             name: userCreated.name,
             email: userCreated.email,
             token: generateToken(userCreated._id),
