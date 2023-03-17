@@ -129,6 +129,7 @@ const destructureAuthor = (author) => {
   };
 };
 const destructureTweet = (tweet) => {
+  console.log(tweet);
   return {
     _id: tweet._id,
     text: tweet.text,
@@ -140,6 +141,7 @@ const destructureTweet = (tweet) => {
       ? destructureTweet(tweet.orig_post_id)
       : null,
     image: tweet.image,
+    createdAt: tweet.createdAt,
   };
 };
 const getTweets = async (page, user_id, like, replies) => {
