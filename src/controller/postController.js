@@ -129,7 +129,7 @@ const destructureAuthor = (author) => {
   };
 };
 const destructureTweet = (tweet) => {
-  console.log(tweet);
+  // console.log("Destructure", tweet);
   return {
     _id: tweet._id,
     text: tweet.text,
@@ -192,9 +192,7 @@ const getAllTweets = async (req, res) => {
     let { user_id, _id, like, replies } = req.body;
     const data = await getTweets(page, user_id, like, replies);
     if (data) {
-      // console.log(data);
       if (!_id) _id = null;
-      // console.log(_id);
       const getLike = data.map((tweet) => getLikeCount(tweet._id));
       const getUserLiked = data.map((tweet) => getUserLikePost(tweet._id, _id));
       const userLikedComplete = await Promise.all(getUserLiked);

@@ -35,7 +35,8 @@ const getLikePosts = async (page, user_id) => {
     .populate("post_id");
 
   if (data) {
-    data = data.filter((el) => el.post_id !== null);
+    console.log(...data);
+    data = data.filter((el) => el.post_id);
     const newData = data.map(async (el) => {
       return {
         _id: el.post_id._id,
@@ -45,6 +46,8 @@ const getLikePosts = async (page, user_id) => {
         ref_id: el.post_id.reply_to_id ? el.post_id.reply_to_id : null,
         image: el.post_id.image,
         author_id: await getUserById(el.post_id.author_id),
+        createdAt: el.post_id.createdAt,
+        updatedAt: el.post_id.updatedAt,
       };
     });
     const prom = Promise.all(newData);
@@ -58,6 +61,7 @@ const likePost = async (req, res) => {
   try {
     const isLikeCreated = await createLike(post_id, _id);
     if (isLikeCreated) {
+      console.log("User Like Save");
       res.status(201).json({ message: "Like" });
     }
   } catch (error) {

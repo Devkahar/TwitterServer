@@ -2,7 +2,7 @@ const express = require("express");
 const app = express();
 const PORT = process.env.PORT || 4000;
 const dotenv = require("dotenv");
-const authRoutes = require("./route/authRoute");
+const userRoutes = require("./route/userRoute");
 const postRoutes = require("./route/postRoute");
 const likeRoutes = require("./route/likeRoute");
 const imageRoutes = require("./route/imageRoute");
@@ -16,7 +16,7 @@ connectDB();
 app.get("/hello/", (req, res) => {
   res.send("Hello Dev Here");
 });
-app.use("/api", authRoutes);
+app.use("/api", userRoutes);
 app.use("/api", postRoutes);
 app.use("/api", likeRoutes);
 app.use("/api", imageRoutes);

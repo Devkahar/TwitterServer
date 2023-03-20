@@ -8,6 +8,7 @@ const {
   createFollower,
   unFollow,
   getUserList,
+  getFollowingSuggestion,
 } = require("../controller/userController");
 const { signInRequired, attachId } = require("../middleware/authMiddleware");
 router.post("/user/signup/", signUp);
@@ -17,4 +18,5 @@ router.post("/unfollow/", signInRequired, unFollow);
 router.get("/user/list/", getAlluser);
 router.get("/user/search/:query", getUserList);
 router.post("/user/info/:user_id", attachId, getUserDetail);
+router.post("/user/follow/suggestion/", signInRequired, getFollowingSuggestion);
 module.exports = router;

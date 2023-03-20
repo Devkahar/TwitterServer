@@ -187,13 +187,52 @@ const unFollow = async (req, res) => {
       res.status(201).send({ message: "Unfollow" });
     }
   } catch (error) {
-    console.log();
+    console.log(error);
     res.status(401).json({ errorMeassge: error.message });
   }
 };
 const createDummyUser = async () => {
   const user = new User({ email, name, password, bio: bio !== "" ? bio : "" });
   const userCreated = await user.save();
+};
+
+const isFollowing = async (_id, curr_id) => {
+  if (_id === curr_id) return true;
+  if (await Follow.findOne({ follower_id: curr_id, following_id: _id })) {
+    return true;
+  } else return false;
+};
+const getFollowingSuggestion = async (req, res) => {
+  try {
+    let { _id, page } = req.body;
+    if (!_id) _id = null;
+    if (!page) page = 1;
+    const suggestion = await User.find({})
+      .sort({ createdAt: "desc" })
+      .limit(10)
+      .skip((page - 1) * 10);
+    if (suggestion) {
+      const following = suggestion.map((el) => isFollowing(el._id, _id));
+      const followingComplete = await Promise.all(following);
+      if (followingComplete) {
+        console.log(followingComplete);
+        const newData = [];
+        for (let i = 0; i < suggestion.length; i++) {
+          if (!followingComplete[i]) {
+            newData.push({
+              _id: suggestion[i]._id,
+              name: suggestion[i].name,
+              image: suggestion[i].avatar,
+            });
+          }
+        }
+        res.status(200).json({ data: newData });
+      }
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(401).json({ errorMeassge: error.message });
+  }
 };
 module.exports = {
   signUp,
@@ -204,4 +243,5 @@ module.exports = {
   createFollower,
   unFollow,
   getUserList,
+  getFollowingSuggestion,
 };
