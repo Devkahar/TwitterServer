@@ -142,6 +142,7 @@ const destructureTweet = (tweet) => {
       : null,
     image: tweet.image,
     createdAt: tweet.createdAt,
+    updatedAt: tweet.updatedAt,
   };
 };
 const getTweets = async (page, user_id, like, replies) => {
@@ -150,7 +151,7 @@ const getTweets = async (page, user_id, like, replies) => {
     data = await getLikePosts(page, user_id);
   } else if (user_id && replies) {
     data = await Post.find({ author_id: user_id, reply_to_id: { $ne: null } })
-      .sort({ createdAt: "desc" })
+      .sort({ updatedAt: "desc" })
       .limit(10)
       .skip((page - 1) * 10)
       .populate("author_id")
@@ -162,7 +163,7 @@ const getTweets = async (page, user_id, like, replies) => {
       reply_to_id: null,
       orig_post_id: null,
     })
-      .sort({ createdAt: "desc" })
+      .sort({ updatedAt: "desc" })
       .limit(10)
       .skip((page - 1) * 10)
       .populate("author_id")
@@ -170,7 +171,7 @@ const getTweets = async (page, user_id, like, replies) => {
       .populate("reply_to_id");
   } else {
     data = await Post.find({ reply_to_id: null, orig_post_id: null })
-      .sort({ createdAt: "desc" })
+      .sort({ updatedAt: "desc" })
       .limit(10)
       .skip((page - 1) * 10)
       .populate("author_id")

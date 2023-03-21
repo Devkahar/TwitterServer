@@ -11,7 +11,7 @@ const e = require("express");
 // @route   POST /api/user/signup
 const signUp = async (req, res) => {
   // console.log(req);
-  const { name, password, email, bio } = req.body;
+  const { name, password, email, bio, image } = req.body;
   if (validateEmail(email) && validatePassword(password) && name !== "") {
     try {
       const userExisit = await User.findOne({
@@ -25,6 +25,7 @@ const signUp = async (req, res) => {
           email,
           name,
           password,
+          avatar: image ?? "",
           bio: bio !== "" ? bio : "",
         });
         const userCreated = await user.save();
@@ -33,8 +34,10 @@ const signUp = async (req, res) => {
             _id: userCreated._id,
             name: userCreated.name,
             email: userCreated.email,
+            image: userCreated.avatar ?? "",
             token: generateToken(userCreated._id),
           };
+          console.log(data);
           res.status(201).json({ ...data });
         }
       }
@@ -54,10 +57,12 @@ const signIn = async (req, res) => {
     try {
       const user = await User.findOne({ email });
       if (user && (await user.matchPassword(password))) {
+        console.log("avatar ",user.avatar);
         res.status(200).json({
           _id: user._id,
           name: user.name,
           email: user.email,
+          image: user.avatar ?? "",
           token: generateToken(user._id),
         });
       } else {

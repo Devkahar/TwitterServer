@@ -18,5 +18,5 @@ router.post("/unfollow/", signInRequired, unFollow);
 router.get("/user/list/", getAlluser);
 router.get("/user/search/:query", getUserList);
 router.post("/user/info/:user_id", attachId, getUserDetail);
-router.post("/user/follow/suggestion/", signInRequired, getFollowingSuggestion);
+router.post("/user/follow/suggestion/", attachId, getFollowingSuggestion);
 module.exports = router;
