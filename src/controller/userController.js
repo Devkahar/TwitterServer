@@ -1,5 +1,6 @@
 const User = require("../model/userModel");
 const Follow = require("../model/followingModel");
+const bcrypt = require("bcryptjs");
 const {
   validateEmail,
   validatePassword,
@@ -35,6 +36,7 @@ const signUp = async (req, res) => {
             name: userCreated.name,
             email: userCreated.email,
             image: userCreated.avatar ?? "",
+            bio: userCreated.bio,
             token: generateToken(userCreated._id),
           };
           console.log(data);
@@ -57,12 +59,13 @@ const signIn = async (req, res) => {
     try {
       const user = await User.findOne({ email });
       if (user && (await user.matchPassword(password))) {
-        console.log("avatar ",user.avatar);
+        console.log("avatar ", user.avatar);
         res.status(200).json({
           _id: user._id,
           name: user.name,
           email: user.email,
           image: user.avatar ?? "",
+          bio: user.bio,
           token: generateToken(user._id),
         });
       } else {
@@ -77,6 +80,46 @@ const signIn = async (req, res) => {
     res.status(401).json({ errorMeassge });
   }
 };
+const changePassword = async (req, res) => {
+  try {
+    const salt = await bcrypt.genSalt(10);
+    let { _id, password } = req.body;
+    password = await bcrypt.hash(password, salt);
+    if (
+      password &&
+      (await User.findOneAndUpdate({ _id }, { password: password }))
+    ) {
+      res.status(201).json({ message: "Password Changes Successfully" });
+    } else {
+      throw new Error("Cannot Change password");
+    }
+  } catch (error) {
+    res.status(401).json({ errorMeassge: error.message });
+  }
+};
+const changeUserInfo = async (req, res) => {
+  try {
+    const { _id, name, email, bio, image } = req.body;
+    const user = await User.findOneAndUpdate(
+      { _id },
+      { name, email, bio, avatar: image ?? "" },
+      { returnOriginal: false }
+    );
+    if (user) {
+      res.status(201).json({
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        image: user.avatar ?? "",
+        bio: user.bio,
+      });
+    } else {
+      throw new Error("Cannot Change password");
+    }
+  } catch (error) {
+    res.status(401).json({ errorMeassge: error.message });
+  }
+};
 const getAlluser = async (req, res) => {
   try {
     const users = await User.find();
@@ -86,6 +129,7 @@ const getAlluser = async (req, res) => {
           _id: el._id,
           name: el.name,
           email: el.email,
+          bio: el.bio,
         };
       });
       res.status(201).json({
@@ -211,13 +255,17 @@ const getFollowingSuggestion = async (req, res) => {
   try {
     let { _id, page } = req.body;
     if (!_id) _id = null;
+    console.log(_id);
+    console.log(page);
     if (!page) page = 1;
     const suggestion = await User.find({})
       .sort({ createdAt: "desc" })
-      .limit(10)
-      .skip((page - 1) * 10);
+      .skip((page - 1) * 10)
+      .limit(10);
     if (suggestion) {
-      const following = suggestion.map((el) => isFollowing(el._id, _id));
+      const following = suggestion.map((el) =>
+        isFollowing(el._id.toString(), _id)
+      );
       const followingComplete = await Promise.all(following);
       if (followingComplete) {
         console.log(followingComplete);
@@ -232,6 +280,8 @@ const getFollowingSuggestion = async (req, res) => {
           }
         }
         res.status(200).json({ data: newData });
+      } else {
+        throw Error("No Users Found");
       }
     }
   } catch (error) {
@@ -249,4 +299,6 @@ module.exports = {
   unFollow,
   getUserList,
   getFollowingSuggestion,
+  changePassword,
+  changeUserInfo,
 };

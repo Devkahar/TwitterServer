@@ -9,10 +9,14 @@ const {
   unFollow,
   getUserList,
   getFollowingSuggestion,
+  changePassword,
+  changeUserInfo,
 } = require("../controller/userController");
 const { signInRequired, attachId } = require("../middleware/authMiddleware");
 router.post("/user/signup/", signUp);
 router.post("/user/signin/", signIn);
+router.post("/user/change/password", signInRequired, changePassword);
+router.post("/user/change/info", signInRequired, changeUserInfo);
 router.post("/follow/", signInRequired, createFollower);
 router.post("/unfollow/", signInRequired, unFollow);
 router.get("/user/list/", getAlluser);
