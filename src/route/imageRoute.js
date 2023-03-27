@@ -4,8 +4,8 @@ const multer = require("multer");
 const AWS = require("aws-sdk");
 const uuid = require("uuid");
 const s3 = new AWS.S3({
-  accessKeyId: process.env.AWS_ACCESS_KEY_ID_APP,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY_APP,
+  accessKeyId: "AKIAXBGT6ZAY3KXSJTBJ",
+  secretAccessKey: "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",
 });
 const upload = multer().single("image");
 router.post("/image/upload", upload, (req, res, next) => {
