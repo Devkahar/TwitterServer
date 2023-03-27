@@ -11,7 +11,7 @@ const upload = multer().single("image");
 router.post("/image/upload", upload, (req, res, next) => {
   let myFile = req.file.originalname.split(".");
   const fileType = myFile[myFile.length - 1];
-  console.log("Bucket Name ", process.env.AWS_BUCKET_NAME);
+  console.log("Bucket Name ", process.env.AWS_BUCKET_NAME_APP);
   const params = {
     Bucket: process.env.AWS_BUCKET_NAME_APP,
     Key: `${uuid.v4()}.${fileType}`,
