@@ -1,32 +1,31 @@
 const express = require("express");
 const router = express.Router();
 const multer = require("multer");
-const storage = multer.diskStorage({
-  destination(req, file, cb) {
-    cb(null, "uploads");
-  },
-  filename(req, file, cb) {
-    cb(null, `${Date.now()}-${file.originalname}`);
-  },
+const AWS = require("aws-sdk");
+const uuid = require("uuid");
+const s3 = new AWS.S3({
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
 });
-
-// function checkFileType(file, cb) {
-//   const filetypes = /jpg|jpeg|png/;
-//   const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-//   const mimetype = filetypes.test(file.mimetype);
-
-//   if (extname && mimetype) {
-//     return cb(null, true);
-//   } else {
-//     cb("Images only!");
-//   }
-// }
-
-const upload = multer({ storage });
-router.post("/image/upload", upload.single("image"), (req, res, next) => {
-  res
-    .status(201)
-    .json({ message: "Image Upload Successful", path: `/${req.file.path}` });
+const upload = multer().single("image");
+router.post("/image/upload", upload, (req, res, next) => {
+  let myFile = req.file.originalname.split(".");
+  const fileType = myFile[myFile.length - 1];
+  console.log("Bucket Name ", process.env.AWS_BUCKET_NAME);
+  const params = {
+    Bucket: process.env.AWS_BUCKET_NAME,
+    Key: `${uuid.v4()}.${fileType}`,
+    Body: req.file.buffer,
+  };
+  s3.upload(params, (error, data) => {
+    if (error) {
+      res.status(500).send(error);
+    } else {
+      res
+        .status(201)
+        .json({ message: "Image Upload Successful", path: "/" + data.key });
+    }
+  });
 });
 
 module.exports = router;
