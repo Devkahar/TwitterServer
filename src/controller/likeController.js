@@ -53,7 +53,9 @@ const getLikeCount = async (post_id) => {
 
 const getUserLikePost = async (post_id, user_id) => {
   let key = post_id.toString();
-  let userLikeKey = key + user_id.toString();
+  let userLikeKey;
+  if (!user_id) userLikeKey = null;
+  else userLikeKey = key + user_id.toString();
   if (likeCountCache.has(userLikeKey)) return userLikeKey.get(userLikeKey);
   if (await Like.findOne({ user_id, post_id })) {
     return true;
