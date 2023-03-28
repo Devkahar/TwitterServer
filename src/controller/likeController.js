@@ -1,26 +1,60 @@
 const e = require("express");
 const Like = require("../model/likeModel");
 const { getUserById } = require("./userController");
-
+const likeCountCache = new Map();
+const userLikeCache = new Map();
 const createLike = async (post_id, user_id) => {
+  let key = post_id.toString();
+  let userLikeKey = key + user_id.toString();
+  if (userLikeCache.has(userLikeKey) && userLikeCache.get(userLikeKey))
+    return true;
   const likeExist = await Like.findOne({ post_id, user_id });
   if (likeExist) {
     throw new Error("Already Liked Post");
   } else {
     const like = new Like({ post_id, user_id });
-    return await like.save();
+    const res = await like.save();
+
+    if (res) {
+      if (likeCountCache.has(key)) {
+        likeCountCache.set(key, likeCountCache.get(key) + 1);
+      }
+      userLikeCache.set(userLikeKey, true);
+    }
+    return res;
   }
 };
 
 const deleteLike = async (post_id, user_id) => {
-  return await Like.findOneAndDelete({ post_id, user_id });
+  let key = post_id.toString();
+  let userLikeKey = key + user_id.toString();
+  userLikeCache.set(userLikeKey, false);
+  const data = await Like.findOneAndDelete({ post_id, user_id });
+  if (data) {
+    if (likeCountCache.has(key)) {
+      likeCountCache.set(key, likeCountCache.get(key) - 1);
+    }
+  }
+  return data;
 };
 
 const getLikeCount = async (post_id) => {
-  return await Like.find({ post_id }).count();
+  let key = post_id.toString();
+  console.log(key);
+  if (likeCountCache.has(key)) {
+    return likeCountCache.get(key);
+  }
+  const data = await Like.find({ post_id }).count();
+  if (data >= 0) {
+    likeCountCache.set(key, data);
+  }
+  return data;
 };
 
 const getUserLikePost = async (post_id, user_id) => {
+  let key = post_id.toString();
+  let userLikeKey = key + user_id.toString();
+  if (likeCountCache.has(userLikeKey)) return userLikeKey.get(userLikeKey);
   if (await Like.findOne({ user_id, post_id })) {
     return true;
   } else {
