@@ -21,6 +21,6 @@ app.use("/api", postRoutes);
 app.use("/api", likeRoutes);
 app.use("/api", imageRoutes);
 app.use("/uploads", express.static("./uploads"));
-app.listen(PORT, () => {
+app.listen(PORT, "10.20.40.239", () => {
   console.log("Server is listening on port " + PORT);
 });
